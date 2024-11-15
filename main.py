@@ -1,3 +1,6 @@
+
+
+
 import os
 import time
 import shutil
@@ -9,17 +12,17 @@ from selenium.common.exceptions import NoSuchElementException
 from instagrapi import Client
 import sys
 import asyncio
-from telegram import Bot
+from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = ''
-channel_username = '@'
-bot = Bot(token=bot_token)
-
-# Initialize and login to the instagrapi Client
-client = Client()
-client.login('', '')
+bot_token = '' 
+channel_username = '@' 
+bot = Bot(token=bot_token) 
+ 
+# Initialize and login to the instagrapi Client 
+client = Client() 
+client.login('', '') 
 
 def initialize_driver():
     """
@@ -121,12 +124,24 @@ def print_url_descriptions(url_description_list):
         else:
             print(f"Filename: {filename}\nDescription: Not Found")
 
-async def upload_on_telegram_bot(url_description_list):
-    for filename, description in url_description_list:
-        file_path = os.path.join(os.path.dirname(__file__), filename)
-        async with bot:
-            await bot.send_document(chat_id=channel_username, document=open(file_path, 'rb'), caption=description)
-        print("File uploaded successfully!")
+async def upload_on_telegram_bot(url_description_list): 
+    print("url_description_list", url_description_list) 
+    async with bot: 
+        for filename, description in url_description_list: 
+            try: 
+                media = None 
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): 
+                    media = InputMediaPhoto(open(filename, 'rb'), caption=description) 
+                elif filename.lower().endswith('.mp4'): 
+                    media = InputMediaVideo(open(filename, 'rb'), caption=description) 
+ 
+                if media: 
+                    await bot.send_media_group(chat_id=channel_username, media=[media]) 
+                    print(f"Uploaded: {filename}") 
+            except FileNotFoundError: 
+                print(f"File not found: {filename}") 
+            except Exception as e: 
+                print(f"Error processing file {filename}: {str(e)}")
 
 def find_posts_get_all_urls(driver, username):
     """
