@@ -1,4 +1,4 @@
-  <h1 text="red">This code is currently in the testing phase and is not recommended for use in real projects</h1>
 <h1>Instagram Post Downloader and Telegram Uploader</h1> <p>This script automates the process of downloading Instagram posts and uploading them to a Telegram channel.</p> <h2>Features</h2> <ul> <li>Login to Instagram using <code>instagrapi</code></li> <li>Download media (photos, videos, albums) from Instagram posts</li> <li>Retrieve and store descriptions of Instagram posts</li> <li>Upload media and descriptions to a Telegram channel</li> </ul> <h2>Installation</h2> <pre> pip install selenium instagrapi python-telegram-bot </pre> <h2>Usage</h2> <p>Before running the script, make sure to update the following variables:</p> <ul> <li><code>bot_token</code>: Your Telegram bot token</li> <li><code>channel_username</code>: Your Telegram channel username</li> <li><code>username</code>: Instagram username to download posts from</li> <li><code>password</code>: Instagram account password</li> 
 </ul>
+  <p style="color:red;">This code is currently in the testing phase and is not recommended for use in real projects</p>
 
