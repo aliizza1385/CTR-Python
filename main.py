@@ -81,38 +81,49 @@ def download_media_posts(post_urls, username):
         all_filenames.extend(filenames)
     return all_filenames
 
-def find_all_description(top_posts_urls, driver, filenames):
-    """
-    Finds all descriptions for a list of post URLs and stores them with filenames.
-    """
-    url_description_list = []
-    
-    for post_url, filename in zip(top_posts_urls, filenames):
-        driver.get(post_url)
-        driver.implicitly_wait(5)
-        try:
-            h1_element = driver.find_element(By.XPATH, '//h1[@class="_ap3a _aaco _aacu _aacx _aad7 _aade"]')
-            h1_html = h1_element.get_attribute('innerHTML')
-
-            # Replace <br> tags with newline characters
-            h1_text = h1_html.replace('<br>', '\n')
-
-            # Extract text from <a> tags and replace the <a> tags with their text content
-            a_elements = h1_element.find_elements(By.TAG_NAME, "a")
-            for a in a_elements:
-                a_text = a.text
-                a_html = a.get_attribute('outerHTML')
-                h1_text = h1_text.replace(a_html, a_text)
-
+def find_all_description(top_posts_urls, driver, filenames): 
+    """ 
+    Finds all descriptions for a list of post URLs and stores them with filenames. 
+    """ 
+    url_description_list = [] 
+    album_description = {}  # Dictionary to store descriptions for album parts 
+     
+    for post_url, filename in zip(top_posts_urls, filenames): 
+        driver.get(post_url) 
+        driver.implicitly_wait(5) 
+        try: 
+            h1_element = driver.find_element(By.XPATH, '//h1[@class="_ap3a _aaco _aacu _aacx _aad7 _aade"]') 
+            h1_html = h1_element.get_attribute('innerHTML') 
+ 
+            # Replace <br> tags with newline characters 
+            h1_text = h1_html.replace('<br>', '\n') 
+ 
+            # Extract text from <a> tags and replace the <a> tags with their text content 
+            a_elements = h1_element.find_elements(By.TAG_NAME, "a") 
+            for a in a_elements: 
+                a_text = a.text 
+                a_html = a.get_attribute('outerHTML') 
+                h1_text = h1_text.replace(a_html, a_text) 
+ 
             description = h1_text
-            url_description_list.append((filename, description))
-            print(f"Description for {post_url}: {description}")
-        except NoSuchElementException:
-            print(f"Description not found for URL: {post_url}")
-            url_description_list.append((filename, None))
-        except Exception as e:
-            print(f"An error occurred while processing URL {post_url}: {str(e)}")
-    
+            
+            # Check if filename contains a pattern indicating it's part of an album
+            if '_' in filename:
+                parts = filename.split('_')
+                if len(parts) > 2 and parts[-2].isdigit() and parts[-1].split('.')[0].isdigit():
+                    album_key = '_'.join(parts[:-1])
+                    if album_key not in album_description:
+                        album_description[album_key] = description
+                    description = album_description[album_key]
+            
+            url_description_list.append((filename, description)) 
+            print(f"Description for {post_url}: {description}") 
+        except NoSuchElementException: 
+            print(f"Description not found for URL: {post_url}") 
+            url_description_list.append((filename, None)) 
+        except Exception as e: 
+            print(f"An error occurred while processing URL {post_url}: {str(e)}") 
+     
     return url_description_list
 
 def print_url_descriptions(url_description_list):
@@ -203,7 +214,7 @@ if __name__ == "__main__":
     # Set the output encoding to utf-8
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
     
-    username = "akanecco_2323"
+    username = "skincare_zinab"
     driver = initialize_driver()
     find_posts_get_all_urls(driver, username)
     driver.implicitly_wait(5)
