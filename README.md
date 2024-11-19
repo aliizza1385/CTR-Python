@@ -20,6 +20,6 @@ Welcome to the CTR-Python repository! This project is focused on the implementat
 
 <h2 id="contributing">Contributing</h2> <p>We welcome contributions from the community! If you have suggestions for improvements, new features, or bug fixes, please feel free to create a pull request or open an issue.</p>
 
-<h2 id="license">License</h2> <p>This project is licensed under the MIT License. See the <a href="LICENSE">LICENSE</a> file for more information.</p>
-  <p style="color:red;">This code is currently in the testing phase and is not recommended for use in real projects</p>
+
+  <h2 style="color:red;"><p>This code is currently in the testing phase and is not recommended for use in real projects</p></h2>
 
