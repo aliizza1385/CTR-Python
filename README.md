@@ -2,7 +2,7 @@ CTR-Python
 Overview
 Welcome to the CTR-Python repository! This project is focused on the implementation and analysis of Click-Through Rate (CTR) prediction models using Python. It provides a comprehensive toolkit for building, training, and evaluating various machine learning models aimed at predicting the CTR for online advertisements.
 
-<details> <summary><strong>Table of Contents</strong></summary> <ul> <li><a href="#introduction">Introduction</a></li> <li><a href="#features">Features</a></li> <li><a href="#installation">Installation</a></li> <li><a href="#usage">Usage</a></li> <li><a href="#datasets">Datasets</a></li> <li><a href="#models">Models</a></li> <li><a href="#evaluation">Evaluation</a></li> <li><a href="#contributing">Contributing</a></li> <li><a href="#license">License</a></li> <li><a href="#contact">Contact</a></li> </ul> </details>
+<details> <summary><strong>Table of Contents</strong></summary> <ul> <li><a href="#introduction">Introduction</a></li> <li><a href="#features">Features</a></li> <li><a href="#installation">Installation</a></li> <li><a href="#usage">Usage</a></li> <li><a href="#datasets">Datasets</a></li> <li><a href="#models">Models</a></li> <li><a href="#evaluation">Evaluation</a></li> <li><a href="#contributing">Contributing</a></li> </ul> </details>
 
 <h2 id="introduction">Introduction</h2> <p>CTR prediction is crucial for optimizing the performance of online advertisements. Accurate predictions help in better targeting ads, improving user experience, and increasing revenue. This repository provides an easy-to-use and flexible framework to experiment with different machine learning algorithms for CTR prediction.</p>
 
