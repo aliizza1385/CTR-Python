@@ -14,13 +14,14 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '' 
-channel_username = '@' 
+bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
+channel_username = '@testctrpython' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('', '') 
+client.login('testctrpython', 'alirezahosseini') 
+filename_to_url ={}
 
 def initialize_driver():
     """
@@ -46,18 +47,23 @@ def download_post(client, media, index, username):
 
     filenames = []
 
+    # Construct the post URL using media.code and username
+    post_url = f"https://www.instagram.com/p/{media.code}/"
+
     # Download the media into the user-specific folder
     if media.media_type == 1:  # Photo
         media_path = client.photo_download(media.pk, folder=user_folder)
         new_filename = os.path.join(user_folder, f"{username}_{index+1}{os.path.splitext(media_path)[1]}")
         shutil.move(media_path, new_filename)
         filenames.append(new_filename)
+        filename_to_url[new_filename] = post_url
         print(f"Downloaded and renamed {index+1}: {new_filename}")
     elif media.media_type == 2:  # Video
         media_path = client.video_download(media.pk, folder=user_folder)
         new_filename = os.path.join(user_folder, f"{username}_{index+1}{os.path.splitext(media_path)[1]}")
         shutil.move(media_path, new_filename)
         filenames.append(new_filename)
+        filename_to_url[new_filename] = post_url
         print(f"Downloaded and renamed {index+1}: {new_filename}")
     elif media.media_type == 8:  # Album
         media_paths = client.album_download(media.pk, folder=user_folder)
@@ -65,9 +71,12 @@ def download_post(client, media, index, username):
             new_filename = os.path.join(user_folder, f"{username}_{index+1}_{i+1}{os.path.splitext(path)[1]}")
             shutil.move(path, new_filename)
             filenames.append(new_filename)
+            filename_to_url[new_filename] = post_url
             print(f"Downloaded and renamed {index+1}_{i+1}: {new_filename}")
 
     return filenames
+
+
 
 def download_media_posts(post_urls, username):
     """
@@ -81,32 +90,61 @@ def download_media_posts(post_urls, username):
         all_filenames.extend(filenames)
     return all_filenames
 
-def find_all_description(top_posts_urls, driver, filenames): 
+def extract_url_from_filename(filename):
+    """
+    Extracts the URL corresponding to a given filename using the filename_to_url dictionary.
+    """
+    return filename_to_url.get(filename, None)
+
+def find_all_description(driver, filenames): 
     """ 
-    Finds all descriptions for a list of post URLs and stores them with filenames. 
+    Finds all descriptions for a list of filenames and stores them. 
     """ 
     url_description_list = [] 
     album_description = {}  # Dictionary to store descriptions for album parts 
-     
-    for post_url, filename in zip(top_posts_urls, filenames): 
+
+    for filename in filenames:
+        post_url = extract_url_from_filename(filename)
+        if not post_url:
+            print(f"URL not found for filename: {filename}")
+            url_description_list.append((filename, None))
+            continue
+
         driver.get(post_url) 
+
         driver.implicitly_wait(5) 
         try: 
-            h1_element = driver.find_element(By.XPATH, '//h1[@class="_ap3a _aaco _aacu _aacx _aad7 _aade"]') 
-            h1_html = h1_element.get_attribute('innerHTML') 
- 
+            # Try finding the description element using different XPaths
+            description_element = None
+            possible_xpaths = [
+                '//h1[@class="_ap3a _aaco _aacu _aacx _aad7 _aade"]',
+                '//span[@class="x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs xt0psk2 x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"]'
+            ]
+            for xpath in possible_xpaths:
+                try:
+                    description_element = driver.find_element(By.XPATH, xpath)
+                    break
+                except NoSuchElementException:
+                    continue
+
+            if not description_element:
+                raise NoSuchElementException("No valid description element found")
+
+            h1_html = description_element.get_attribute('innerHTML') 
+
             # Replace <br> tags with newline characters 
             h1_text = h1_html.replace('<br>', '\n') 
- 
+
             # Extract text from <a> tags and replace the <a> tags with their text content 
-            a_elements = h1_element.find_elements(By.TAG_NAME, "a") 
+            a_elements = description_element.find_elements(By.TAG_NAME, "a") 
             for a in a_elements: 
                 a_text = a.text 
                 a_html = a.get_attribute('outerHTML') 
                 h1_text = h1_text.replace(a_html, a_text) 
- 
+
             description = h1_text
-            
+            if len(description) > 50:
+                description = description[:50]
             # Check if filename contains a pattern indicating it's part of an album
             if '_' in filename:
                 parts = filename.split('_')
@@ -115,23 +153,17 @@ def find_all_description(top_posts_urls, driver, filenames):
                     if album_key not in album_description:
                         album_description[album_key] = description
                     description = album_description[album_key]
-            
+
             url_description_list.append((filename, description)) 
-            print(f"Description for {post_url}: {description}") 
+            print(f"Description for {filename}: {description}") 
         except NoSuchElementException: 
             print(f"Description not found for URL: {post_url}") 
             url_description_list.append((filename, None)) 
         except Exception as e: 
             print(f"An error occurred while processing URL {post_url}: {str(e)}") 
-     
+
     return url_description_list
 
-def print_url_descriptions(url_description_list):
-    for filename, description in url_description_list:
-        if description:
-            print(f"Filename: {filename}\nDescription: {description}")
-        else:
-            print(f"Filename: {filename}\nDescription: Not Found")
 
 async def upload_on_telegram_bot(url_description_list): 
     print("url_description_list", url_description_list) 
@@ -157,6 +189,7 @@ def find_posts_get_all_urls(driver, username):
     Finds the top 10 posts of a user by likes using Selenium, and downloads them.
     """
     driver.get(f"https://www.instagram.com/{username}")
+    
     time.sleep(5)  # Wait for the page to load
 
     action = ActionChains(driver)
@@ -202,10 +235,7 @@ def find_posts_get_all_urls(driver, username):
     filenames = download_media_posts(top_posts_urls, username)
 
     # Get descriptions for the top posts
-    url_description_list = find_all_description(top_posts_urls, driver, filenames)
-
-    # Print the descriptions
-    print_url_descriptions(url_description_list)
+    url_description_list = find_all_description(driver, filenames)
 
     # Upload files to Telegram
     asyncio.run(upload_on_telegram_bot(url_description_list))
@@ -214,7 +244,7 @@ if __name__ == "__main__":
     # Set the output encoding to utf-8
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
     
-    username = "skincare_zinab"
+    username = "magoolime"
     driver = initialize_driver()
     find_posts_get_all_urls(driver, username)
     driver.implicitly_wait(5)
