@@ -9,7 +9,7 @@ Welcome to the CTR-Python repository! This project is focused on the implementat
 <h2 id="features">Features</h2> <ul> <li>Preprocessing and feature engineering tools</li> <li>Implementation of various machine learning models for CTR prediction</li> <li>Comprehensive evaluation metrics and visualization tools</li> <li>Easy integration with popular Python libraries like scikit-learn and TensorFlow</li> </ul>
 
 <h2 id="installation">Installation</h2> <p>To get started with this project, clone the repository to your local machine and install the necessary dependencies:</p> <pre><code> git clone https://github.com/aliizza1385/CTR-Python.gitcd
-  pip install -r requirements.txt</code></pre>
+pip install -r requirements.txt</code></pre>
 
 <h2 id="usage">Usage</h2> <p>Explore the different scripts and notebooks provided in the repository to build and evaluate CTR prediction models. You can start by running the example scripts to understand the workflow:</p> <pre><code> python scripts/train_model.py --config configs/model_config.json </code></pre>
 
