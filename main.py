@@ -14,13 +14,13 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
-channel_username = '@testctrpython' 
+bot_token = '' 
+channel_username = '@' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('testctrpython', 'alirezahosseini') 
+client.login('', '') 
 filename_to_url ={}
 
 def initialize_driver():
@@ -212,6 +212,7 @@ def find_posts_get_all_urls(driver, username):
     Finds the top 10 posts of a user by likes using Selenium, and downloads them.
     """
     driver.get(f"https://www.instagram.com/{username}")
+
     time.sleep(5)  # Wait for the page to load
 
     # Locate the latest post on the user's profile
@@ -277,7 +278,7 @@ if __name__ == "__main__":
     # Set the output encoding to utf-8
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
     
-    username = "johnnydepp"
+    username = "soldier_girl.oi"
     driver = initialize_driver()
     find_posts_get_all_urls(driver, username)
     driver.implicitly_wait(5)
