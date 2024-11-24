@@ -14,13 +14,13 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '' 
-channel_username = '@' 
+bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
+channel_username = '@testctrpython' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('', '') 
+client.login('testctrpython', 'alirezahosseini') 
 filename_to_url ={}
 
 def initialize_driver():
@@ -181,30 +181,24 @@ def find_all_description(driver, filenames):
     return url_description_list
 
 
-async def upload_on_telegram_bot(url_description_list, delay=2):
-    print("url_description_list", url_description_list)
+async def upload_on_telegram_bot(url_description_list):
     async with bot:
         for filename, description in url_description_list:
-            success = False
-            while not success:
-                try:
-                    # Determine the type of media and prepare it for upload
-                    media = None
-                    if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                        media = InputMediaPhoto(open(filename, 'rb'), caption=description)
-                    elif filename.lower().endswith('.mp4'):
-                        media = InputMediaVideo(open(filename, 'rb'), caption=description)
+            try:
+                media = None
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                    media = InputMediaPhoto(open(filename, 'rb'), caption=description)
+                elif filename.lower().endswith('.mp4'):
+                    media = InputMediaVideo(open(filename, 'rb'), caption=description)
 
-                    if media:
-                        await bot.send_media_group(chat_id=channel_username, media=[media])
-                        print(f"Uploaded: {filename}")
-                        success = True
-                except FileNotFoundError:
-                    print(f"File not found: {filename}")
-                    success = True  # Stop retrying if the file is not found
-                except Exception as e:
-                    print(f"Error processing file {filename}, retrying in {delay} seconds... Error: {str(e)}")
-                    await asyncio.sleep(delay)
+                if media:
+                    await bot.send_media_group(chat_id=channel_username, media=[media])
+                    print(f"Uploaded: {filename}")
+            except FileNotFoundError:
+                print(f"File not found: {filename}")
+            except Exception as e:
+                print("sending")
+
 
 
 def find_posts_get_all_urls(driver, username):
@@ -278,7 +272,7 @@ if __name__ == "__main__":
     # Set the output encoding to utf-8
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
     
-    username = "soldier_girl.oi"
+    username = "magoolime"
     driver = initialize_driver()
     find_posts_get_all_urls(driver, username)
     driver.implicitly_wait(5)
