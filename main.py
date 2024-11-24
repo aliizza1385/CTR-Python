@@ -14,13 +14,13 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
-channel_username = '@testctrpython' 
+bot_token = '' 
+channel_username = '@' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('testctrpython', 'alirezahosseini') 
+client.login('', '') 
 filename_to_url ={}
 
 def initialize_driver():
@@ -180,7 +180,6 @@ def find_all_description(driver, filenames):
 
     return url_description_list
 
-
 async def upload_on_telegram_bot(url_description_list):
     async with bot:
         for filename, description in url_description_list:
@@ -198,8 +197,6 @@ async def upload_on_telegram_bot(url_description_list):
                 print(f"File not found: {filename}")
             except Exception as e:
                 print("sending")
-
-
 
 def find_posts_get_all_urls(driver, username):
     """
