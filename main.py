@@ -14,13 +14,13 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
-channel_username = '@testctrpython' 
+bot_token = '' 
+channel_username = '@' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('testctrpython', 'alirezahosseini') 
+client.login('', '') 
 filename_to_url ={}
 
 def initialize_driver():
@@ -204,6 +204,7 @@ def find_posts_get_all_urls(driver, username):
     """
     action = ActionChains(driver)
     driver.get(f"https://www.instagram.com/{username}")
+
     time.sleep(5)  # Wait for the page to load
 
     top_posts = []
@@ -213,7 +214,6 @@ def find_posts_get_all_urls(driver, username):
     action.move_to_element(new_post).perform()
 
     try:
-        like_text = post.find_element(By.XPATH, ".//span[@class='x1lliihq x1plvlek xryxfnj x1n2onr6 x1ji0vk5 x18bv5gf x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xl565be x1xlr1w8 x9bdzbf x10wh9bi x1wdrske x8viiok x18hxmgj']").text
         post_set = set()
         last_height = driver.execute_script("return document.body.scrollHeight")
 
@@ -270,6 +270,7 @@ def find_posts_get_all_urls(driver, username):
 
     # Upload files to Telegram
     asyncio.run(upload_on_telegram_bot(url_description_list))
+
 
 
 if __name__ == "__main__":
