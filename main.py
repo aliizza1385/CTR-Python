@@ -14,13 +14,13 @@ from telegram import Bot, InputMediaPhoto, InputMediaVideo
 
 
 # Initialize the bot
-bot_token = '' 
-channel_username = '@' 
+bot_token = '7942062518:AAHpX04fj_hNKXftHiG7_kigx3JeA-DSJLw' 
+channel_username = '@testctrpython' 
 bot = Bot(token=bot_token) 
  
 # Initialize and login to the instagrapi Client 
 client = Client() 
-client.login('', '') 
+client.login('testctrpython', 'alirezahosseini') 
 filename_to_url ={}
 
 def initialize_driver():
@@ -202,50 +202,57 @@ def find_posts_get_all_urls(driver, username):
     """
     Finds the top 10 posts of a user by likes using Selenium, and downloads them.
     """
+    action = ActionChains(driver)
     driver.get(f"https://www.instagram.com/{username}")
-
     time.sleep(5)  # Wait for the page to load
 
+    top_posts = []
     # Locate the latest post on the user's profile
     new_post = driver.find_element(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
     new_post_url = new_post.find_element(By.XPATH, ".//a").get_attribute("href")
-    print(new_post_url)
-    
-    action = ActionChains(driver)
-    top_posts = []
-    post_set = set()
-    last_height = driver.execute_script("return document.body.scrollHeight")
+    action.move_to_element(new_post).perform()
 
-    while True:
-        # Find new posts
-        new_posts = driver.find_elements(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
-        for post in new_posts:
+    try:
+        like_text = post.find_element(By.XPATH, ".//span[@class='x1lliihq x1plvlek xryxfnj x1n2onr6 x1ji0vk5 x18bv5gf x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xl565be x1xlr1w8 x9bdzbf x10wh9bi x1wdrske x8viiok x18hxmgj']").text
+        post_set = set()
+        last_height = driver.execute_script("return document.body.scrollHeight")
+
+        while True:
+            # Find new posts
+            new_posts = driver.find_elements(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
+            for post in new_posts:
+                post_url = post.find_element(By.XPATH, ".//a").get_attribute("href")
+
+                if new_post_url not in post_set:
+                    post_set.add(new_post_url)
+                    top_posts.append((new_post_url, 9999999999))
+
+                if post_url not in post_set:
+                    post_set.add(post_url)
+                    action.move_to_element(post).perform()
+                    like_text = post.find_element(By.XPATH, ".//span[@class='x1lliihq x1plvlek xryxfnj x1n2onr6 x1ji0vk5 x18bv5gf x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xl565be x1xlr1w8 x9bdzbf x10wh9bi x1wdrske x8viiok x18hxmgj']").text
+                    if 'K' in like_text:
+                        like = int(float(like_text.replace('K', '')) * 1000)
+                    elif 'M' in like_text:
+                        like = int(float(like_text.replace('M', '')) * 1000000)
+                    else:
+                        like = int(like_text.replace(',', ''))
+                    top_posts.append((post_url, like))
+
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)  # Add delay to avoid rate limiting
+
+            # Check if the end of the page is reached
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
+
+    except Exception as e:
+        recent_posts = driver.find_elements(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
+        for post in recent_posts:
             post_url = post.find_element(By.XPATH, ".//a").get_attribute("href")
-
-            if new_post_url not in post_set:
-                post_set.add(new_post_url)
-                top_posts.append((new_post_url, 99999999))
-
-            if post_url not in post_set:
-                post_set.add(post_url)
-                action.move_to_element(post).perform()
-                like_text = post.find_element(By.XPATH, ".//span[@class='x1lliihq x1plvlek xryxfnj x1n2onr6 x1ji0vk5 x18bv5gf x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xl565be x1xlr1w8 x9bdzbf x10wh9bi x1wdrske x8viiok x18hxmgj']").text
-                if 'K' in like_text:
-                    like = int(float(like_text.replace('K', '')) * 1000)
-                elif 'M' in like_text:
-                    like = int(float(like_text.replace('M', '')) * 1000000)
-                else:
-                    like = int(like_text.replace(',', ''))
-                top_posts.append((post_url, like))
-
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)  # Add delay to avoid rate limiting
-
-        # Check if the end of the page is reached
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
+            top_posts.append((post_url, 9999999999))
 
     # Sort posts by likes and get the top 10
     top_posts = sorted(top_posts, key=lambda x: x[1], reverse=True)[:11]
@@ -255,7 +262,6 @@ def find_posts_get_all_urls(driver, username):
     for post_url, like in top_posts:
         print(f"Post URL: {post_url}, Likes: {like}")
 
-    # top_posts_urls.append(latest_post_url)
     # Download media from the top posts and get filenames
     filenames = download_media_posts(top_posts_urls, username)
 
@@ -264,6 +270,7 @@ def find_posts_get_all_urls(driver, username):
 
     # Upload files to Telegram
     asyncio.run(upload_on_telegram_bot(url_description_list))
+
 
 if __name__ == "__main__":
     # Set the output encoding to utf-8
