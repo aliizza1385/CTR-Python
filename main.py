@@ -7,61 +7,112 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
-from instagrapi import Client
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import sys
 import asyncio
 from telegram import Bot, InputMediaPhoto, InputMediaVideo
-import pyautogui
+import instaloader
+import fnmatch
+from environs import Env
 
+# Load environment variables from .env file
+env = Env()
+env.read_env()
+
+L = instaloader.Instaloader()
 # Initialize bot token and channel username
-bot_token = '' 
-channel_username = '@' 
-bot = Bot(token=bot_token) 
- 
-# Initialize and login to the instagrapi Client 
-client = Client() 
-client.login('', '') 
+bot_token = env('BOT_TOKEN_TELEGRAM') 
+channel_username = env('CHANNEL_TELEGRAM_USERNAME')
+bot = Bot(token=bot_token)
+
+client = instaloader.Instaloader()
 filename_to_url = {}
 
-def initialize_driver():
-    # Set Chrome options
-    options = Options()
-    options.add_argument(r"--user-data-dir=C:\\Users\\Philips\\AppData\\Local\\Google\\Chrome\\User Data\\Default")
-    return webdriver.Chrome(options=options)
+user_data_dirs = os.getenv('USER_DATA_DIRS')
 
-def download_post(client, media, index, username):
+
+def initialize_driver(user_data_dir):
+    options = webdriver.ChromeOptions()
+    options.add_argument(f'--user-data-dir={user_data_dir}')
+    options.add_argument('--headless')
+    caps = DesiredCapabilities.CHROME.copy()
+
+    for key, value in caps.items():
+        options.set_capability(key, value)
+
+    driver = webdriver.Remote(
+        command_executor='http://localhost:4444/wd/hub',
+        options=options
+    )
+    
+    return driver
+
+def delete_unnecessary_files(user_folder, username):
+    pattern = f"{username}_*.*"
+    for item in os.listdir(user_folder):
+        if not fnmatch.fnmatch(item, pattern):
+            os.remove(os.path.join(user_folder, item))
+            print(f"Removed {item}")
+
+def download_post(client, post, index, username):
+
+    filenames = []
+    post_url = f"https://www.instagram.com/p/{post.shortcode}/"
+    
+    # Ensure the user folder exists
     downloads_folder = 'downloads'
     if not os.path.exists(downloads_folder):
         os.makedirs(downloads_folder)
-    user_folder = os.path.join(downloads_folder, username)
-    if not os.path.exists(user_folder):
-        os.makedirs(user_folder)
-    filenames = []
-    post_url = f"https://www.instagram.com/p/{media.code}/"
-    
     # Download media based on its type
-    if media.media_type == 1:  # Photo
-        media_path = client.photo_download(media.pk, folder=user_folder)
-        new_filename = os.path.join(user_folder, f"{username}_{index+1}{os.path.splitext(media_path)[1]}")
-        shutil.move(media_path, new_filename)
-        filenames.append(new_filename)
-        filename_to_url[new_filename] = post_url
-        print(f"Downloaded and renamed {index+1}: {new_filename}")
-    elif media.media_type == 2:  # Video
-        media_path = client.video_download(media.pk, folder=user_folder)
-        new_filename = os.path.join(user_folder, f"{username}_{index+1}{os.path.splitext(media_path)[1]}")
-        shutil.move(media_path, new_filename)
-        filenames.append(new_filename)
-        filename_to_url[new_filename] = post_url
-        print(f"Downloaded and renamed {index+1}: {new_filename}")
-    elif media.media_type == 8:  # Album
-        media_paths = client.album_download(media.pk, folder=user_folder)
-        for i, path in enumerate(media_paths):
-            new_filename = os.path.join(user_folder, f"{username}_{index+1}_{i+1}{os.path.splitext(path)[1]}")
-            shutil.move(path, new_filename)
-            filenames.append(new_filename)
-            filename_to_url[new_filename] = post_url
-            print(f"Downloaded and renamed {index+1}_{i+1}: {new_filename}")
+    if post.typename == 'GraphVideo':  # Video
+        media_path = os.path.join(downloads_folder, f"{username}_{index+1}.mp4")
+        client.download_post(post, target=downloads_folder)
+        # Rename downloaded files
+        for item in os.listdir(downloads_folder):
+            if item.endswith('.mp4') and not item.startswith(username):
+                if not os.path.exists(media_path):
+                    os.rename(os.path.join(downloads_folder, item), media_path)
+                else:
+                    os.remove(os.path.join(downloads_folder, item))  # Remove duplicate file
+                print(f"Downloaded and renamed {index+1}: {media_path}")
+                filenames.append(media_path)
+                filename_to_url[media_path] = post_url
+                break
+        
+    elif post.typename == 'GraphImage':  # Single Image
+        media_path = os.path.join(downloads_folder, f"{username}_{index+1}.jpg")
+        client.download_post(post, target=downloads_folder)
+        # Rename downloaded files
+        for item in os.listdir(downloads_folder):
+            if item.endswith('.jpg') and not item.startswith(username):
+                if not os.path.exists(media_path):
+                    os.rename(os.path.join(downloads_folder, item), media_path)
+                else:
+                    os.remove(os.path.join(downloads_folder, item))  # Remove duplicate file
+                print(f"Downloaded and renamed {index+1}: {media_path}")
+                filenames.append(media_path)
+                filename_to_url[media_path] = post_url
+                break
+    
+    elif post.typename == 'GraphSidecar':  # Album
+        client.download_post(post, target=downloads_folder)
+        for i, sidecar_node in enumerate(post.get_sidecar_nodes()):
+            extension = 'mp4' if sidecar_node.is_video else 'jpg'
+            media_path = os.path.join(downloads_folder, f"{username}_{index+1}_{i+1}.{extension}")
+            # Rename downloaded files
+            for item in os.listdir(downloads_folder):
+                if item.endswith(f".{extension}") and not item.startswith(username):
+                    if not os.path.exists(media_path):
+                        os.rename(os.path.join(downloads_folder, item), media_path)
+                    else:
+                        os.remove(os.path.join(downloads_folder, item))  # Remove duplicate file
+                    print(f"Downloaded album item {i+1}: {media_path}")
+                    filenames.append(media_path)
+                    filename_to_url[media_path] = post_url
+                    break
+    
+    delete_unnecessary_files(downloads_folder, username)
+
     return filenames
 
 def download_media_posts(post_urls, username, delay=2):
@@ -70,9 +121,8 @@ def download_media_posts(post_urls, username, delay=2):
         success = False
         while not success:
             try:
-                media_pk = client.media_pk_from_url(url)
-                media = client.media_info(media_pk)
-                filenames = download_post(client, media, index, username)
+                post = instaloader.Post.from_shortcode(client.context, url.split("/")[-2])
+                filenames = download_post(client, post, index, username)
                 all_filenames.extend(filenames)
                 success = True
             except Exception as e:
@@ -80,44 +130,55 @@ def download_media_posts(post_urls, username, delay=2):
                 time.sleep(delay)
     return all_filenames
 
+
+
 def extract_url_from_filename(filename):
     return filename_to_url.get(filename, None)
 
 def filter_bmp_characters(text):
     return ''.join(char for char in text if ord(char) <= 0xFFFF)
 
-def upload_on_etaa(filenames_and_descriptions, channel_etaa_username):
-    driver.get(f"https://web.eitaa.com/#@{channel_etaa_username}")
+def upload_on_etaa(filenames_and_descriptions, channel_etaa_username, driver, compression):
+    driver.get(f"https://web.eitaa.com/#{channel_etaa_username}")
     time.sleep(10)  # Simplified the two 5-second sleeps
 
     for filename, description in filenames_and_descriptions:
-        print(f"Uploading {filename} with description: {description}")
-        
-        # Handling upload
-        upload_button = driver.find_element(By.XPATH, '//div[@class="btn-icon btn-menu-toggle attach-file tgico-attach"]')
-        upload_button.click()
-        upload_button1 = driver.find_element(By.XPATH, '//div[@class="btn-menu-item tgico-document rp"]')
-        upload_button1.click()
+        # Construct the full file path
+        file_path = os.path.join(os.getcwd(), filename)
+ 
+        file_input = driver.find_element(By.XPATH, '//input[@type="file"]')
+        file_input.send_keys(file_path)
         time.sleep(2)
 
-        file_path = os.path.join(os.getcwd(), filename)  # Construct the full file path
-        print(f"File path: {file_path}")
-        pyautogui.write(file_path)
-        pyautogui.press('enter')
-
         sys.stdout.reconfigure(encoding='utf-8')
+        time.sleep(2)
+        
         if description is not None:
             # Handling description
             text_description = driver.find_element(By.XPATH, '//div[@class="input-field-input i18n"]')
-
             # Remove newlines and filter out non-BMP characters
             bmp_description = filter_bmp_characters(description.replace('\n', ' '))
-            print(f"BMP Description: {bmp_description}")
             text_description.send_keys(bmp_description)
+        
+        # Find the compression checkbox
+        check_input_compression = driver.find_element(By.XPATH, '//input[@id="input-compress-items"and@class="checkbox-field-input"]')
+        button_click_compression = driver.find_element(By.XPATH, '//span[@class="checkbox-caption i18n"]')
+
+        if compression is True:
+            if check_input_compression.is_selected():
+                button_click_compression.click()
+            else:
+                pass
+        else:
+            if check_input_compression.is_selected():
+                pass
+            else:
+                button_click_compression.click()
 
         upload_button2 = driver.find_element(By.XPATH, '//button[@class="btn-primary btn-color-primary rp"]')
         upload_button2.click()
         time.sleep(5)
+    time.sleep(10)
 
 def find_all_description(driver, filenames):
     filenames_and_descriptions = []
@@ -152,8 +213,8 @@ def find_all_description(driver, filenames):
                 a_html = a.get_attribute('outerHTML')
                 h1_text = h1_text.replace(a_html, a_text)
             description = h1_text
-            if len(description) > 150:
-                description = description[:150]
+            if len(description) > 250:
+                description = description[:250]
             if '_' in filename:
                 parts = filename.split('_')
                 if len(parts) > 2 and parts[-2].isdigit() and parts[-1].split('.')[0].isdigit():
@@ -191,7 +252,6 @@ def find_posts_get_all_urls(driver, username):
     action = ActionChains(driver)
     driver.get(f"https://www.instagram.com/{username}")
     time.sleep(5)
-
     top_posts = []
     new_post = driver.find_element(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
     new_post_url = new_post.find_element(By.XPATH, ".//a").get_attribute("href")
@@ -225,10 +285,12 @@ def find_posts_get_all_urls(driver, username):
             last_height = new_height
     except Exception as e:
         recent_posts = driver.find_elements(By.XPATH, '//div[@class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p x1ntc13c x9i3mqj x11i5rnm x2pgyrj"]')
+        top_posts.clear()
         for post in recent_posts:
             post_url = post.find_element(By.XPATH, ".//a").get_attribute("href")
             top_posts.append((post_url, 9999999999))
-    top_posts = sorted(top_posts, key=lambda x: x[1], reverse=True)[:11]
+
+    top_posts = sorted(top_posts, key=lambda x: x[1], reverse=True)[:10]
     top_posts_urls = [post_url for post_url, like in top_posts]
     print("Top 11 posts with most likes:")
     for post_url, like in top_posts:
@@ -240,11 +302,17 @@ def find_posts_get_all_urls(driver, username):
 
 if __name__ == "__main__":
     sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
-    username = "mrbug_ir"
-    channel_etaa_username = "testctrpython"
-    driver = initialize_driver()
-
+    
+    # Fetch environment variables
+    username = os.getenv('USERNAME_INSTAGRAM_FOR_DOWNLOADS_POSTS')
+    channel_etaa_username = os.getenv('EITAA_CHANNEL_USERNAME')
+    compression = os.getenv('COMPRESSION', 'false').lower() in ('true', '1', 't')
+    
+    driver = initialize_driver(user_data_dirs)
+    
     filenames_and_descriptions = find_posts_get_all_urls(driver, username)
-    upload_on_etaa(filenames_and_descriptions, channel_etaa_username)
+    upload_on_etaa(filenames_and_descriptions, channel_etaa_username, driver, compression)
+    
     driver.implicitly_wait(5)
     driver.quit()
+

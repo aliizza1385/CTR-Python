@@ -1,0 +1,36 @@
+version: "3"
+
+services:
+  selenium-hub:
+    image: selenium/hub:4.9.0
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_PORT=4444
+    networks:
+      - selenium-grid
+
+  selenium-node-chrome:
+    image: selenium/node-chrome:4.9.0
+    container_name: selenium-node-chrome
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_NODE_MAX_SESSIONS=5
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    ports:
+      - "5900:5900"
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - selenium-grid
+
+networks:
+  selenium-grid:
+    driver: bridge
