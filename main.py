@@ -8,9 +8,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.chrome.service import Service
+from telegram import Bot, InputMediaPhoto, InputMediaVideo
+from webdriver_manager.chrome import ChromeDriverManager
 import sys
 import asyncio
-from telegram import Bot, InputMediaPhoto, InputMediaVideo
 import instaloader
 import fnmatch
 from environs import Env
@@ -32,20 +34,20 @@ user_data_dirs = os.getenv('USER_DATA_DIRS')
 
 
 def initialize_driver(user_data_dir):
+    if not os.path.exists(user_data_dir):
+        os.makedirs(user_data_dir)
+        
     options = webdriver.ChromeOptions()
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('--headless')
-    caps = DesiredCapabilities.CHROME.copy()
 
-    for key, value in caps.items():
-        options.set_capability(key, value)
-
-    driver = webdriver.Remote(
-        command_executor='http://localhost:4444/wd/hub',
-        options=options
-    )
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
     
     return driver
+
+
+
 
 def delete_unnecessary_files(user_folder, username):
     pattern = f"{username}_*.*"
@@ -307,7 +309,6 @@ if __name__ == "__main__":
     username = os.getenv('USERNAME_INSTAGRAM_FOR_DOWNLOADS_POSTS')
     channel_etaa_username = os.getenv('EITAA_CHANNEL_USERNAME')
     compression = os.getenv('COMPRESSION', 'false').lower() in ('true', '1', 't')
-    
     driver = initialize_driver(user_data_dirs)
     
     filenames_and_descriptions = find_posts_get_all_urls(driver, username)
